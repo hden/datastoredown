@@ -18,7 +18,7 @@ class Datastore extends abstract.AbstractLevelDOWN
             callback(null, @)
 
     # https://github.com/GoogleCloudPlatform/gcloud-node/blob/master/regression/datastore.js#L39-L63
-    _put: (key, value, options, callback) ->
+    _put: (key, value = '', options, callback) ->
         key  = @_key(key, options)
         data = {value}
         @_dataset.save({key, data}, callback)
@@ -28,9 +28,10 @@ class Datastore extends abstract.AbstractLevelDOWN
         @_dataset.get key, (error, entity) ->
             return callback(error) if error?
 
-            value = entity?.data?.value or ''
+            value = entity?.data?.value
 
             if value?
+                value = new Buffer(value) if options.asBuffer is true
                 callback(null, value)
             else
                 # 'NotFound' error, consistent with LevelDOWN API
@@ -41,6 +42,8 @@ class Datastore extends abstract.AbstractLevelDOWN
         @_dataset.delete(key, callback)
 
     _key: (key, options) ->
+        # datastore does not allow `0` as ID
+        key = '_' + key.toString()
         @_dataset.key([options.kind or 'Level', key])
 
 module.exports = Datastore

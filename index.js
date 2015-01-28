@@ -33,6 +33,9 @@
 
     Datastore.prototype._put = function(key, value, options, callback) {
       var data;
+      if (value == null) {
+        value = '';
+      }
       key = this._key(key, options);
       data = {
         value: value
@@ -50,8 +53,11 @@
         if (error != null) {
           return callback(error);
         }
-        value = (entity != null ? (_ref = entity.data) != null ? _ref.value : void 0 : void 0) || '';
+        value = entity != null ? (_ref = entity.data) != null ? _ref.value : void 0 : void 0;
         if (value != null) {
+          if (options.asBuffer === true) {
+            value = new Buffer(value);
+          }
           return callback(null, value);
         } else {
           if (value == null) {
@@ -67,6 +73,7 @@
     };
 
     Datastore.prototype._key = function(key, options) {
+      key = '_' + key.toString();
       return this._dataset.key([options.kind || 'Level', key]);
     };
 

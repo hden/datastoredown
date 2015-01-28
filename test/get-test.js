@@ -9,7 +9,7 @@
 
   leveldown = require('../');
 
-  abstract = require('abstract-leveldown/abstract/del-test');
+  abstract = require('abstract-leveldown/abstract/get-test');
 
   if (require.main === module) {
     abstract.all(leveldown, test, testCommon);
