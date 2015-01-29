@@ -24,8 +24,8 @@ db.readStream()
 - [x] put
 - [x] get
 - [x] delete
-- [ ] batch
-- [ ] chainedBatch
+- [x] batch
+- [x] chainedBatch
 - [ ] iterator
 - [ ] approximateSize
 - [ ] destroy
