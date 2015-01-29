@@ -2,6 +2,7 @@
 
 abstract = require 'abstract-leveldown'
 gcloud   = require 'gcloud'
+entity   = require 'gcloud/lib/datastore/entity'
 
 class Datastore extends abstract.AbstractLevelDOWN
     constructor: (location) ->
@@ -13,15 +14,15 @@ class Datastore extends abstract.AbstractLevelDOWN
         # projectId = options.projectId or ''
         # keyFilename = options.keyFilename or ''
 
-        @_dataset = gcloud.datastore.dataset {@projectId, @keyFilename}
+        @_dataset = gcloud.datastore.dataset { @projectId, @keyFilename }
         process.nextTick ->
             callback(null, @)
 
     # https://github.com/GoogleCloudPlatform/gcloud-node/blob/master/regression/datastore.js#L39-L63
     _put: (key, value = '', options, callback) ->
         key  = @_key(key, options)
-        data = {value}
-        @_dataset.save({key, data}, callback)
+        data = { value }
+        @_dataset.save({ key, data }, callback)
 
     _get: (key, options, callback) ->
         key = @_key(key, options)
@@ -45,5 +46,31 @@ class Datastore extends abstract.AbstractLevelDOWN
         # datastore does not allow `0` as ID
         key = '_' + key.toString()
         @_dataset.key([options.kind or 'Level', key])
+
+    _batch: (array, options, callback) ->
+        # http://goo.gl/3LJZsc
+        fn = (acc, obj, index) =>
+            key = @_key(obj.key, options)
+
+            if obj.type is 'del'
+                acc.delete.push entity.keyToKeyProto key
+            else
+                ent = entity.entityToEntityProto({ value: obj.value or '' })
+                ent.key = entity.keyToKeyProto(key)
+                acc.upsert.push ent
+
+            acc
+
+        req =
+            mutation: array.reduce(fn, { upsert: [], insert_auto_id: [], delete: [] })
+
+        onCommit = (error) ->
+            callback(error)
+
+        if @_dataset.id
+            @_dataset.requests_.push(req)
+            @_dataset.requestCallbacks_.push(onCommit)
+        else
+            @_dataset.makeReq_('commit', req, onCommit)
 
 module.exports = Datastore
